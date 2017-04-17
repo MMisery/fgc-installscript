@@ -2,7 +2,7 @@
 
 ### Simple minded install script for
 ### FreeGeek Chicago by David Eads
-### Updates by Brent Bandegar, Dee Newcum, James Slater, Alex Hanson
+### Updates by Brent Bandegar, Dee Newcum, James Slater, Alex Hanson, M. Misery
 
 ### Available on FreeGeek` Chicago's github Account at http://git.io/Ool_Aw
 
@@ -116,6 +116,60 @@ apt-get -y update && apt-get -y dist-upgrade
 
 # Each package should have it's own apt-get line.
 # If a package is not found or broken, the whole apt-get line is terminated.
+
+### Packages for Trusty (14.04) ###
+###################################
+
+# Auto-accept the MS Core Fonts EULA
+echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections
+
+# Add Pepper Flash Player support for Chromium
+# Note that this temporarily downloads Chrome, and the plugin uses plugin APIs not provided in Firefox
+if [ $(lsb_release -rs) = '16.04' ]; then
+    echo "* Customizing Xenial packages"
+    apt-get -y install pepperflashplugin-nonfree &&
+    update-pepperflashplugin-nonfree --install
+    apt-get -y install fonts-mgopen
+
+	# Kubuntu 16.04 Specific Packages
+	if [ $(dpkg-query -W -f='${Status}' kubuntu-desktop 2>/dev/null | grep -c "ok installed") -eq 1 ]; then
+	    echo "* Customizing Xenial-Kubuntu packages."
+	    apt-get -y install software-center
+	    apt-get -y install kdewallpapers
+	    apt-get -y install xscreensaver
+	    apt-get -y install xscreensaver-data-extra
+	    apt-get -y install kubuntu-restricted-extras
+	    apt-get -y autoremove muon muon-updater muon-discover
+	fi
+
+	# Xubuntu 16.04 Specific Packages
+	if [ $(dpkg-query -W -f='${Status}' xubuntu-desktop 2>/dev/null | grep -c "ok installed") -eq 1 ]; then
+	    echo "* Customizing Xenial-Xubuntu packages."
+	    apt-get -y install xubuntu-restricted-extras
+	    apt-get -y remove gnumeric* abiword*
+        echo "* Customizing Xenial-Xubuntu settings."
+            apt-get -y install xmlstarlet
+            # Make a system-wide fix so that Audio CDs autoload correctly.
+            xmlstarlet ed -L -u '/channel/property[@name="autoplay-audio-cds"]/property[@name="command"]/@value' -v '/usr/bin/vlc cdda://' /etc/xdg/xdg-xubuntu/xfce4/xfconf/xfce-perchannel-xml/thunar-volman.xml
+            ### And now do it for the current user.
+            xfconf-query -c thunar-volman -p /autoplay-audio-cds/command -s "/usr/bin/vlc cdda://"
+
+            # Make a system-wide fix so that Audio CDs autoload correctly.
+            xmlstarlet ed -L -u '/channel/property[@name="autoplay-video-cds"]/property[@name="command"]/@value' -v '/usr/bin/vlc dvd://' /etc/xdg/xdg-xubuntu/xfce4/xfconf/xfce-perchannel-xml/thunar-volman.xml
+            ### And now do it for the current user.
+            xfconf-query -c thunar-volman -p /autoplay-video-cds/command -s "/usr/bin/vlc dvd://"
+
+            # Make a system-wide fix so that Mac eject key (X86Eject) is mapped to eject (eject -r) function.
+            xmlstarlet ed -L -s '/channel/property[@name="commands"]/property[@name="default"]' -t elem -n propertyTMP -v "" \
+                -i //propertyTMP -t attr -n "name" -v "X86Eject" \
+                -i //propertyTMP -t attr -n "type" -v "string" \
+                -i //propertyTMP -t attr -n "value" -v "eject" \
+                -r //propertyTMP -v property \
+            /etc/xdg/xdg-xubuntu/xfce4/xfconf/xfce-perchannel-xml/xfce4-keyboard-shortcuts.xml
+            ### And now do it for the current user.
+            xfconf-query -c xfce4-keyboard-shortcuts -p /commands/default/XF86Eject -n -t string -s "eject"
+	fi
+fi
 
 
 ### Packages for Trusty (14.04) ###
